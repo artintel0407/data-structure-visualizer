@@ -1,5 +1,8 @@
 #include <iostream>
+#include <thread>
+#include <chrono>
 using namespace std;
+
 
 class Node {
 private:
@@ -45,12 +48,26 @@ int Stack::top() {
 }
 
 void Stack::push(int x) {
-    cout << "Pushing: " << x << endl;
+    cout << "\nPushing: " << x << endl;
 
+    // 1단계: 기존 상태 출력
+    print();
+    this_thread::sleep_for(chrono::milliseconds(250));
+
+    // 2단계: 추가될 노드 표시
+    cout << "\nNew Node: [ " << x << " ]\n";
+    cout << "Linking to previous Top...\n";
+    this_thread::sleep_for(chrono::milliseconds(300));
+
+    // 실제 삽입
     Node* newNode = new Node(x);
     newNode->next = head;
     head = newNode;
     n++;
+
+    // 3단계: 결과 출력
+    cout << "\nResult:\n";
+    print();
 }
 
 void Stack::pop() {
@@ -58,23 +75,44 @@ void Stack::pop() {
         cout << "Stack is empty\n";
         return;
     }
-    cout << "Popping: " << head->data << endl;
 
+    cout << "\nPopping: " << head->data << endl;
+
+    // 1단계: 현재 상태
+    print();
+    this_thread::sleep_for(chrono::milliseconds(150));
+
+    // 2단계: 제거 표시
+    cout << "\nRemoving Top: [ " << head->data << " ]\n";
+    this_thread::sleep_for(chrono::milliseconds(250));
+
+    // 실제 삭제
     Node* temp = head;
     head = head->next;
     delete temp;
     n--;
+
+    // 3단계: 결과
+    cout << "\nResult:\n";
+    print();
 }
 
 void Stack::print() {
     Node* cur = head;
+
     cout << "\nTop\n ↓\n";
 
+    if (empty()) {
+        cout << "NULL\n";
+        return;
+    }
+
     while (cur != nullptr) {
-        cout << "[ " << cur->data << " ]\n";
+        cout << "[ " << cur->data << " ]";
+        if (cur->next != nullptr) cout << " -> ";
         cur = cur->next;
     }
-    cout << "NULL\n";
+    cout << " -> NULL\n";
 }
 
 
