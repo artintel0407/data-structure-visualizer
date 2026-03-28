@@ -48,7 +48,7 @@ void Stack::push(int x) {
     cout << "Pushing: " << x << endl;
 
     Node* newNode = new Node(x);
-    head->next = head;
+    newNode->next = head;
     head = newNode;
     n++;
 }
@@ -59,7 +59,7 @@ void Stack::pop() {
         return;
     }
     cout << "Popping: " << head->data << endl;
-    
+
     Node* temp = head;
     head = head->next;
     delete temp;
