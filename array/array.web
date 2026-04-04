@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Array Visualizer</title>
+    <style>
+        :root {
+            --primary: #4e73df;
+            --accent: #e74c3c;
+            --bg: #f8f9fa;
+            --node-bg: #ffffff;
+            --highlight: #ffeaa7;
+            --success: #1cc88a;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .init-controls {
+            max-width: 900px;
+            margin: 0 auto 10px;
+            padding: 15px;
+            background: #eef2ff;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .controls {
+            max-width: 900px;
+            margin: 0 auto 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 60px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background-color: #2e59d9;
+            }
+
+        #status-message {
+            margin-left: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            min-width: 350px;
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        .array-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            min-height: 200px;
+            background: white;
+            border-radius: 15px;
+            padding: 50px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .cell-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .index-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .cell {
+            width: 55px;
+            height: 55px;
+            border: 2px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            background: var(--node-bg);
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+
+        .shifting {
+            background-color: var(--highlight) !important;
+            transform: translateY(-5px);
+        }
+
+        .new-val {
+            background-color: var(--success) !important;
+            color: white;
+            border-color: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <h1>Array Visualizer</h1>
+    <div class="init-controls">
+        <strong>Array Capacity:</strong>
+        <input type="number" id="inputCap" value="5" min="1" max="20">
+        <button onclick="initializeArray()">Create Array</button>
+    </div>
+    <div class="controls">
+        <input type="number" id="inputIdx" placeholder="Idx">
+        <input type="number" id="inputVal" placeholder="Val">
+        <button onclick="actionSet()">Set</button>
+        <button onclick="actionInsert()">Insert</button>
+        <button onclick="actionErase()">Erase</button>
+        <div id="status-message">Set capacity and click 'Create Array'</div>
+    </div>
+    <div id="array-display" class="array-container"></div>
+
+    <script>
+        let capacity = 0; let array = [];
+        const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+        async function setStatus(msg) { document.getElementById('status-message').innerText = msg; await sleep(800); }
+        function toggleButtons(state) { document.querySelectorAll('button').forEach(b => b.disabled = state); }
+
+        function initializeArray() {
+            capacity = parseInt(document.getElementById('inputCap').value);
+            if (isNaN(capacity) || capacity < 1) return;
+            array = new Array(capacity).fill(0);
+            render();
+            document.getElementById('status-message').innerText = `Array of size ${capacity} created.`;
+        }
+
+        function render(highlightIdx = -1, className = "") {
+            const display = document.getElementById('array-display');
+            display.innerHTML = '';
+            for (let i = 0; i < capacity; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'cell-wrapper';
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (i === highlightIdx) cell.classList.add(className);
+                cell.innerText = array[i];
+                wrapper.innerHTML = `<div class="index-label">${i}</div>`;
+                wrapper.appendChild(cell);
+                display.appendChild(wrapper);
+            }
+        }
+
+        async function actionSet() {
+            const idx = parseInt(document.getElementById('inputIdx').value);
+            const val = parseInt(document.getElementById('inputVal').value);
+            if (idx < 0 || idx >= capacity) return;
+            toggleButtons(true);
+            await setStatus(`Setting index ${idx} to ${val}...`);
+            array[idx] = val; render(idx, "new-val");
+            await setStatus("Done!"); toggleButtons(false);
+        }
+
+        async function actionInsert() {
+            const idx = parseInt(document.getElementById('inputIdx').value);
+            const val = parseInt(document.getElementById('inputVal').value);
+            if (idx < 0 || idx >= capacity) return;
+            toggleButtons(true);
+            await setStatus(`Shifting elements right to insert ${val} at ${idx}...`);
+            for (let i = capacity - 1; i > idx; i--) {
+                render(i, "shifting");
+                await setStatus(`Moving value from ${i - 1} to ${i}...`);
+                array[i] = array[i - 1];
+            }
+            array[idx] = val; render(idx, "new-val");
+            await setStatus("Insertion Complete!"); toggleButtons(false);
+        }
+
+        async function actionErase() {
+            const idx = parseInt(document.getElementById('inputIdx').value);
+            if (idx < 0 || idx >= capacity) return;
+            toggleButtons(true);
+            await setStatus(`Erasing index ${idx} and shifting left...`);
+            for (let i = idx; i < capacity - 1; i++) {
+                render(i, "shifting");
+                await setStatus(`Moving value from ${i + 1} to ${i}...`);
+                array[i] = array[i + 1];
+            }
+            array[capacity - 1] = 0; render(capacity - 1, "new-val");
+            await setStatus("Erasure Complete!"); toggleButtons(false);
+        }
+        initializeArray();
+    </script>
+</body>
+</html>
