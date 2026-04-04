@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Stack Visualizer (LIFO)</title>
+    <style>
+        :root {
+            --primary: #4e73df;
+            --accent: #e74c3c;
+            --bg: #f8f9fa;
+            --node-bg: #ffffff;
+            --top-color: #f6e58d;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .controls {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 70px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background-color: #2e59d9;
+            }
+
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+        #status-message {
+            margin-left: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            min-width: 250px;
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        /* 스택 시각화 영역 (세로형) */
+        .stack-container {
+            max-width: 400px;
+            margin: 0 auto;
+            min-height: 500px;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 10px solid #333; /* 바닥 강조 */
+            position: relative;
+        }
+
+        /* 노드 구조 (세로로 쌓임) */
+        .node-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+            position: relative;
+            margin-bottom: 15px;
+            animation: dropIn 0.5s ease-out;
+        }
+
+        @keyframes dropIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .node-box {
+            width: 100%;
+            border: 3px solid #333;
+            border-radius: 8px;
+            background: var(--node-bg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .data-part {
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            border-bottom: 2px solid #333;
+        }
+
+        .next-part {
+            padding: 5px;
+            text-align: center;
+            font-size: 14px;
+            background: #eee;
+        }
+
+        .arrow {
+            font-size: 24px;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        /* Top 표시 */
+        .top-pointer {
+            position: absolute;
+            left: -80px;
+            top: 15px;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+        }
+
+            .top-pointer::after {
+                content: " ➔";
+                font-size: 20px;
+            }
+
+        .highlight {
+            background-color: var(--top-color) !important;
+        }
+
+        .popping {
+            transform: translateX(100px);
+            opacity: 0;
+            transition: 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Stack Visualizer (LIFO)</h1>
+
+    <div class="controls">
+        <input type="number" id="inputValue" placeholder="값" value="10">
+        <button id="btnPush" onclick="actionPush()">Push</button>
+        <button id="btnPop" onclick="actionPop()">Pop</button>
+        <button onclick="actionTop()">Top (Peek)</button>
+        <div id="status-message">준비 완료</div>
+    </div>
+
+    <div id="stack-display" class="stack-container">
+    </div>
+
+    <script>
+        // --- 1. 데이터 구조 로직 (C++ 코드 기반) ---
+        class Node {
+            constructor(data) {
+                this.data = data;
+                this.next = null;
+            }
+        }
+
+        class Stack {
+            constructor() {
+                this.head = null;
+                this.n = 0;
+            }
+        }
+
+        const stack = new Stack();
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function setStatus(msg) {
+            document.getElementById('status-message').innerText = msg;
+            await sleep(800);
+        }
+
+        function toggleButtons(state) {
+            document.querySelectorAll('button').forEach(b => b.disabled = state);
+        }
+
+        // --- 2. 핵심 동작 애니메이션 ---
+
+        async function actionPush() {
+            const val = document.getElementById('inputValue').value;
+            if (!val) return;
+            toggleButtons(true);
+
+            await setStatus(`1. 신규 노드 [${val}] 생성 중...`);
+
+            // 실제 데이터 구조 변경 (newNode->next = head; head = newNode;)
+            const newNode = new Node(val);
+            newNode.next = stack.head;
+            stack.head = newNode;
+            stack.n++;
+
+            render();
+            await setStatus(`2. 새로운 노드가 Top이 되었습니다.`);
+
+            toggleButtons(false);
+        }
+
+        async function actionPop() {
+            if (stack.n === 0) {
+                await setStatus("스택이 비어있습니다!");
+                return;
+            }
+            toggleButtons(true);
+
+            await setStatus(`1. Top 노드 [${stack.head.data}] 제거 준비...`);
+            const topElement = document.querySelector('.node-item');
+            topElement.classList.add('popping');
+            await sleep(500);
+
+            // 실제 데이터 구조 변경 (head = head->next;)
+            stack.head = stack.head.next;
+            stack.n--;
+
+            render();
+            await setStatus(`2. 제거 완료. 다음 노드가 Top이 됩니다.`);
+            toggleButtons(false);
+        }
+
+        async function actionTop() {
+            if (!stack.head) {
+                alert("Stack is Empty");
+                return;
+            }
+            const topBox = document.querySelector('.node-box');
+            topBox.classList.add('highlight');
+            await setStatus(`현재 Top의 값은 ${stack.head.data}입니다.`);
+            topBox.classList.remove('highlight');
+        }
+
+        // --- 3. 렌더링 함수 ---
+        function render() {
+            const display = document.getElementById('stack-display');
+            display.innerHTML = '';
+
+            if (stack.n === 0) {
+                display.innerHTML = '<div style="color:#aaa; margin-top:200px;">NULL (Empty)</div>';
+                return;
+            }
+
+            let cur = stack.head;
+            let isFirst = true;
+
+            while (cur) {
+                const nodeItem = document.createElement('div');
+                nodeItem.className = 'node-item';
+
+                // Top 포인터 표시
+                if (isFirst) {
+                    const pointer = document.createElement('div');
+                    pointer.className = 'top-pointer';
+                    pointer.innerText = 'TOP';
+                    nodeItem.appendChild(pointer);
+                }
+
+                nodeItem.innerHTML += `
+                    <div class="node-box">
+                        <div class="data-part">${cur.data}</div>
+                        <div class="next-part">next: ${cur.next ? 'Node' : 'NULL'}</div>
+                    </div>
+                    <div class="arrow">↓</div>
+                `;
+
+                display.appendChild(nodeItem);
+                cur = cur.next;
+                isFirst = false;
+            }
+
+            const nullLabel = document.createElement('div');
+            nullLabel.className = 'null-label';
+            nullLabel.style.color = "#bbb";
+            nullLabel.innerText = "NULL";
+            display.appendChild(nullLabel);
+        }
+
+        // 초기화
+        render();
+    </script>
+</body>
+</html>
