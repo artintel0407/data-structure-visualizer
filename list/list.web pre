@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Linked List Visualizer - Dynamic Version</title>
+    <style>
+        /* 1. 디자인 (CSS) */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f6;
+            padding: 30px;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        #status-message {
+            font-weight: bold;
+            color: #e74c3c;
+            border-left: 3px solid #e74c3c;
+            padding-left: 10px;
+            min-width: 350px;
+        }
+
+        .list-container {
+            background: white;
+            padding: 60px;
+            border-radius: 15px;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            position: relative;
+        }
+
+        /* Head 박스 디자인 */
+        .head-box {
+            border: 3px dashed #4e73df;
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 120px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(78, 115, 223, 0.05);
+            margin-right: 20px;
+            transition: all 0.5s;
+        }
+
+        .head-title {
+            font-size: 13px;
+            color: #4e73df;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        /* 노드 디자인 */
+        .node {
+            display: flex;
+            align-items: center;
+        }
+
+        .node-structure {
+            display: flex;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: white;
+            overflow: hidden;
+            transition: all 0.4s;
+        }
+
+        .data-part {
+            padding: 12px 18px;
+            background: #eef2ff;
+            border-right: 2px solid #333;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .next-part {
+            padding: 12px 10px;
+            font-size: 20px;
+        }
+
+        .arrow {
+            font-size: 30px;
+            margin: 0 10px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .null-text {
+            font-weight: bold;
+            color: #bbb;
+            font-style: italic;
+            font-size: 1.2rem;
+        }
+
+        /* 애니메이션 효과 */
+        .highlight {
+            border-color: #e74c3c !important;
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(231,76,60,0.4);
+        }
+
+        .searching {
+            background-color: #ffeaa7 !important;
+        }
+
+        /* 새 노드가 생성되어 올라오는 애니메이션 */
+        .temp-anim-node {
+            position: absolute;
+            bottom: 40px;
+            left: 150px;
+            animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            z-index: 100;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        input {
+            padding: 10px;
+            width: 70px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #4e73df;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+            button:hover {
+                background: #2e59d9;
+                transform: translateY(-2px);
+            }
+
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+                transform: none;
+            }
+    </style>
+</head>
+<body>
+
+    <h1>Data Structure Visualizer</h1>
+
+    <div class="controls">
+        <input type="number" id="nodeValue" value="10">
+        <button id="btnFront" onclick="runInsertFront()">Insert Front</button>
+        <button id="btnBack" onclick="runInsertBack()">Insert Back</button>
+        <button id="btnRemove" onclick="runRemoveFront()">Remove Front</button>
+        <span id="status-message">Ready to start</span>
+    </div>
+
+    <div id="list-container" class="list-container">
+    </div>
+
+    <script>
+        // 2. 로직 및 애니메이션 (JavaScript)
+        class Node {
+            constructor(data) { this.data = data; this.next = null; }
+        }
+        class LinkedList {
+            constructor() { this.head = null; }
+        }
+
+        const list = new LinkedList();
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        async function updateMsg(msg) {
+            document.getElementById('status-message').innerText = msg;
+            await sleep(1500); // 동작을 천천히 보기 위해 1.5초 대기
+        }
+
+        function toggleInputs(disabled) {
+            document.querySelectorAll('button').forEach(b => b.disabled = disabled);
+        }
+
+        function createNodeDOM(data, isNew = false) {
+            const div = document.createElement('div');
+            div.className = `node-structure ${isNew ? 'highlight' : ''}`;
+            div.innerHTML = `<div class="data-part">${data}</div><div class="next-part">&bull;</div>`;
+            return div;
+        }
+
+        // --- 동작: 앞쪽에 삽입 ---
+        async function runInsertFront() {
+            const val = document.getElementById('nodeValue').value;
+            if (!val) return;
+            toggleInputs(true);
+
+            const container = document.getElementById('list-container');
+            await updateMsg("Step 1: Allocate new node in memory...");
+
+            // 임시 노드 생성 시각화
+            const temp = document.createElement('div');
+            temp.className = 'node temp-anim-node';
+            temp.appendChild(createNodeDOM(val, true));
+            container.appendChild(temp);
+            await sleep(1000);
+
+            await updateMsg("Step 2: Connect NewNode.next to current Head...");
+            temp.innerHTML += '<div class="arrow">&rarr;</div>';
+            await sleep(1000);
+
+            await updateMsg("Step 3: Update Head pointer to point to NewNode!");
+            const newNode = new Node(val);
+            newNode.next = list.head;
+            list.head = newNode;
+
+            render(); // 실제 데이터 반영 후 다시 그림
+            await updateMsg("Insertion Complete!");
+            toggleInputs(false);
+        }
+
+        // --- 동작: 뒤쪽에 삽입 ---
+        async function runInsertBack() {
+            const val = document.getElementById('nodeValue').value;
+            if (!val) return;
+            if (!list.head) { await runInsertFront(); return; }
+
+            toggleInputs(true);
+            await updateMsg("Step 1: Starting traversal to find the Tail...");
+
+            let cur = list.head;
+            let idx = 0;
+            render();
+            const nodes = document.querySelectorAll('.node-structure');
+
+            while (cur) {
+                nodes[idx].classList.add('searching');
+                await updateMsg(`Checking current node: ${cur.data}`);
+                if (!cur.next) break;
+                nodes[idx].classList.remove('searching');
+                cur = cur.next;
+                idx++;
+            }
+
+            await updateMsg("Step 2: Found Tail! Connecting its Next to new node.");
+            cur.next = new Node(val);
+            render();
+            await updateMsg("Insertion Complete!");
+            toggleInputs(false);
+        }
+
+        // --- 동작: 앞쪽 삭제 ---
+        async function runRemoveFront() {
+            if (!list.head) { await updateMsg("List is empty!"); return; }
+            toggleInputs(true);
+            await updateMsg("Moving Head pointer to the next node...");
+            list.head = list.head.next;
+            render();
+            await updateMsg("Deletion Complete!");
+            toggleInputs(false);
+        }
+
+        // 3. 렌더링 엔진
+        function render() {
+            const container = document.getElementById('list-container');
+            container.innerHTML = '';
+
+            // Head 전용 박스 생성
+            const headBox = document.createElement('div');
+            headBox.className = 'head-box';
+            headBox.innerHTML = '<div class="head-title">HEAD (Pointer)</div>';
+
+            if (!list.head) {
+                headBox.innerHTML += '<div class="null-text">NULL</div>';
+                container.appendChild(headBox);
+                container.innerHTML += '<div class="arrow">&rarr;</div><div class="null-text">NULL</div>';
+            } else {
+                // 첫 번째 노드를 Head 박스 안에 넣기
+                headBox.appendChild(createNodeDOM(list.head.data));
+                container.appendChild(headBox);
+
+                let cur = list.head.next;
+                while (cur) {
+                    container.innerHTML += '<div class="arrow">&rarr;</div>';
+                    const nodeDiv = document.createElement('div');
+                    nodeDiv.className = 'node';
+                    nodeDiv.appendChild(createNodeDOM(cur.data));
+                    container.appendChild(nodeDiv);
+                    cur = cur.next;
+                }
+                container.innerHTML += '<div class="arrow">&rarr;</div><div class="null-text">NULL</div>';
+            }
+        }
+
+        // 초기 실행
+        render();
+    </script>
+</body>
+</html>
