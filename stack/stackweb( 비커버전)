@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>스택 비커 시각화 - LIFO</title>
+    <style>
+        :root {
+            /* 색상 변수 정의 */
+            --primary: #4e73df; /* 기본 파란색 (버튼, 인덱스 등) */
+            --accent: #e74c3c; /* 강조 빨간색 (상태 메시지, TOP) */
+            --bg: #f8f9fa; /* 배경색 */
+            --node-bg: #dbeafe; /* 데이터 블록 배경색 (연한 파랑) */
+            --node-border: #4e73df; /* 데이터 블록 테두리색 */
+            --top-color: #f6e58d; /* Peek할 때 TOP 노드 하이라이트색 */
+        }
+
+        /* 기본 스타일 설정 */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        /* 컨트롤 패널 (상단 버튼 영역) */
+        .controls {
+            max-width: 800px;
+            margin-bottom: 30px;
+            padding: 15px 25px;
+            background: white;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* 입력창 스타일 */
+        input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            width: 60px;
+            text-align: center;
+            outline: none;
+        }
+
+            input:focus {
+                border-color: var(--primary);
+            }
+
+        /* 버튼 기본 스타일 */
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            button:hover {
+                background-color: #2e59d9;
+                transform: translateY(-2px);
+            }
+            /* 호버 효과 */
+            button:active {
+                transform: translateY(0);
+            }
+            /* 클릭 효과 */
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+                transform: none;
+            }
+        /* 비활성화 효과 */
+
+        /* 상태 메시지 창 스타일 */
+        #status-message {
+            margin-left: 15px;
+            font-weight: bold;
+            color: var(--accent);
+            min-width: 250px;
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        /* ★ 비커 (스택 컨테이너) 스타일 ★ */
+        .beaker-container {
+            width: 280px;
+            height: 500px; /* 시각화를 위한 고정 높이 */
+            background: white;
+            /* 비커 유리 디자인 */
+            border-left: 8px solid #bdc3c7; /* 왼쪽 은색 테두리 */
+            border-right: 8px solid #bdc3c7; /* 오른쪽 은색 테두리 */
+            border-bottom: 15px solid #7f8c8d; /* 진한 회색 두꺼운 바닥 */
+            border-radius: 0 0 30px 30px; /* 바닥 모서리 둥글게 */
+
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            /* ★ 핵심: 요소들이 아래에서 위로 차곡차곡 쌓이게 만듦 ★ */
+            flex-direction: column-reverse;
+            justify-content: flex-start; /* 바닥부터 채움 */
+            align-items: center;
+            overflow: hidden; /* 요소가 비커 영역을 넘치지 않게 */
+            position: relative;
+        }
+
+        /* 노드 아이템 (데이터 블록 한 덩어리) */
+        .node-item {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 애니메이션: 위에서 바닥으로 툭 떨어짐 */
+        .drop-in {
+            animation: fallDown 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        @keyframes fallDown {
+            from {
+                transform: translateY(-400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 노드 데이터 블록 (네모난 모양) */
+        .node-box {
+            width: 100%;
+            height: 50px; /* 노드 고정 높이 (쌓이는 느낌 강조) */
+            border: 2px solid var(--node-border);
+            border-radius: 8px;
+            background: var(--node-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 -5px 0 rgba(0,0,0,0.05); /* 입체감을 위한 내부 그림자 */
+            position: relative;
+            margin-bottom: 5px; /* 블록 사이 간격 (화살표 대신 쌓이는 느낌) */
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        /* 데이터 텍스트 스타일 */
+        .data-part {
+            font-weight: bold;
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        /* 화살표는 요청대로 완전히 제거됨 */
+
+        /* TOP 포인터 레이블 (가장 위에 쌓인 노드를 가리킴) */
+        .top-pointer {
+            position: absolute;
+            right: -70px;
+            top: 12px;
+            font-weight: bold;
+            color: var(--accent);
+            font-size: 14px;
+            animation: fadeIn 0.3s forwards;
+        }
+
+            .top-pointer::before {
+                content: "⬅ ";
+            }
+        /* 화살표 추가 */
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Pop 애니메이션 (가장 위 노드가 위로 날아감) */
+        .popping {
+            animation: flyOut 0.5s ease-in forwards !important;
+        }
+
+        @keyframes flyOut {
+            from {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateY(-500px) rotate(20deg);
+                opacity: 0;
+            }
+        }
+
+        /* Peek할 때 TOP 노드 하이라이트 효과 */
+        .highlight {
+            background-color: var(--top-color) !important;
+            border-color: #d4ac0d !important;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>스택 비커 시각화 (Beaker Style)</h1>
+
+    <div class="controls">
+        <strong>값:</strong> <input type="number" id="inputValue" placeholder="10" value="10" min="0" max="99">
+        <button id="btnPush" onclick="actionPush()">Push</button>
+        <button id="btnPop" onclick="actionPop()">Pop</button>
+        <button id="btnPeek" onclick="actionPeek()">Top (Peek)</button>
+        <div id="status-message">준비 완료</div>
+    </div>
+
+    <div id="stack-display" class="beaker-container">
+    </div>
+
+    <script>
+        // --- 1. 데이터 구조 로직 (가상의 스택) ---
+        // 새로운 요소는 0번 인덱스에 추가됨 (LIFO)
+        let stack_data = [];
+
+        // 지연 시간을 위한 도움 함수 (milliseconds)
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        // 상태 메시지를 한국어로 업데이트하는 함수
+        async function updateStatus(msg) {
+            document.getElementById('status-message').innerText = msg;
+            await sleep(1000); // 사용자가 읽고 동작을 따라갈 수 있게 1초 대기
+        }
+
+        // 입력 컨트롤(버튼, 입력창) 활성화/비활성화 함수
+        function toggleButtons(disabled) {
+            document.querySelectorAll('button').forEach(b => b.disabled = disabled);
+            document.getElementById('inputValue').disabled = disabled;
+        }
+
+        // --- 2. 메인 시각화 동작 함수 ---
+
+        // [삽입 동작: Push]
+        async function actionPush() {
+            const input = document.getElementById('inputValue');
+            const val = input.value;
+            if (!val) { alert("값을 입력하세요!"); return; }
+
+            // 비커 크기 제한 (시각화 뷰포트에 맞춤)
+            if (stack_data.length >= 8) { alert("비커가 꽉 찼습니다!"); return; }
+
+            toggleButtons(true); // 버튼 비활성화
+            await updateStatus(`신규 노드 생성 중: [${val}]`);
+
+            // 스택의 맨 앞(논리적 TOP)에 요소 추가
+            stack_data.unshift(val);
+
+            // 다시 그리기, 새로운 TOP 노드에만 drop-in 애니메이션 적용
+            render(true);
+            await updateStatus(`Pop 완료: [${val}]가 새로운 TOP이 되었습니다.`);
+
+            // 입력창 초기화 및 컨트롤 재활성화
+            input.value = Math.floor(Math.random() * 90 + 10); // 다음 값 랜덤 추천
+            toggleButtons(false);
+        }
+
+        // [삭제 동작: Pop] - ★★ 버그 수정됨 ★★
+        async function actionPop() {
+            if (stack_data.length === 0) {
+                await updateStatus("스택이 비어있습니다!");
+                return;
+            }
+            toggleButtons(true); // 버튼 비활성화
+            await updateStatus("TOP 노드 Pop 준비 중...");
+
+            // flex-direction: column-reverse 상태이므로, DOM 트리의 마지막 요소가 시각적 TOP입니다.
+            const nodes = document.querySelectorAll('.node-item');
+            const visualTopEl = nodes[nodes.length - 1]; // 시각적 최상단 요소 찾기
+
+            visualTopEl.classList.add('popping'); // 날아가는 애니메이션 추가
+            await updateStatus(`노드 제거 중: [${stack_data[0]}]`);
+            await sleep(500); // 애니메이션 대기
+
+            // 실제 논리 데이터 제거 (TOP 위치인 0번 인덱스 제거)
+            const poppedValue = stack_data.shift();
+            render(); // 정적 렌더링 (애니메이션 없음)
+            await updateStatus(`Pop 완료: [${poppedValue}]. 새로운 TOP 준비.`);
+
+            // ★★ 오타 수정됨: toggleBtns -> toggleButtons ★★
+            toggleButtons(false); // 버튼 재활성화
+        }
+
+        // [TOP 확인 동작: Peek]
+        async function actionPeek() {
+            if (stack_data.length === 0) { alert("스택이 비어있습니다"); return; }
+
+            // 시각적 최상단 노드 찾기
+            const nodes = document.querySelectorAll('.node-item');
+            const visualTopEl = nodes[nodes.length - 1];
+            const topNodeBox = visualTopEl.querySelector('.node-box');
+
+            topNodeBox.classList.add('highlight'); // 하이라이트 효과
+            await updateStatus(`현재 TOP의 값은 ${stack_data[0]}입니다.`);
+            topNodeBox.classList.remove('highlight');
+            document.getElementById('status-message').innerText = "준비 완료";
+        }
+
+        // --- 3. 렌더링 엔진 ---
+        // isPush가 true일 때만 새로운 노드에 애니메이션을 적용함
+        function render(isPush = false) {
+            const display = document.getElementById('stack-display');
+            display.innerHTML = ''; // 기존 시각적 스택 초기화
+
+            if (stack_data.length === 0) { display.innerHTML = '<div style="color:#aaa; margin-top:150px">비어있음 (NULL)</div>'; return; }
+
+            // column-reverse 특성상, DOM에 먼저 추가된 요소가 시각적 바닥으로 갑니다.
+            // 우리는 스택의 논리적 바닥(stack_data[n-1])을 시각적 바닥에 두고, 논리적 TOP(stack_data[0])을 시각적 맨 위에 두고 싶습니다.
+            // 따라서, DOM 추가 순서를 [논리적 바닥 -> ... -> 논리적 TOP] 순서로 해야 column-reverse가 이를 [TOP -> ... -> 바닥]으로 뒤집습니다.
+
+            // 논리적 바닥(stack_data[n-1])부터 역순으로 DOM에 추가하여 바닥부터 채웁니다.
+            for (let i = stack_data.length - 1; i >= 0; i--) {
+                const nodeItem = document.createElement('div');
+                nodeItem.className = 'node-item';
+
+                // ★ 핵심: Push 버튼을 눌렀고, 현재 렌더링하는 노드가 새로운 TOP(논리 인덱스 0)일 때만 drop-in 애니메이션 적용 ★
+                if (isPush && i === 0) { nodeItem.classList.add('drop-in'); }
+
+                // TOP 포인터 레이블 (논리적 HEAD인 인덱스 0, 시각적으로 가장 위에 있는 노드)
+                if (i === 0) {
+                    const pointer = document.createElement('div');
+                    pointer.className = 'top-pointer';
+                    pointer.innerText = 'TOP';
+                    nodeItem.appendChild(pointer);
+                }
+
+                // 노드 데이터 블록 디자인 (네모난 모양)
+                nodeItem.innerHTML += `
+                        <div class="node-box">
+                            <div class="data-part">${stack_data[i]}</div>
+                        </div>
+                    `;
+
+                display.appendChild(nodeItem); // DOM 컨테이너에 추가 (바닥부터 채움)
+            }
+        }
+
+        render(); // 초기 정적 렌더링
+    </script>
+</body>
+</html>
