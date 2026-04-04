@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>큐 시각화 - FIFO</title>
+    <style>
+        :root {
+            --primary: #4e73df; /* 메인 파란색 */
+            --accent: #e74c3c; /* 강조 빨간색 (Front/Rear) */
+            --bg: #f8f9fa; /* 배경색 */
+            --node-bg: #ffffff; /* 노드 배경 */
+            --highlight: #ffeaa7; /* 동작 중인 노드 강조 */
+            --success: #1cc88a; /* 완료 강조 */
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        /* 컨트롤 영역 */
+        .controls {
+            max-width: 900px;
+            margin: 0 auto 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 70px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background-color: #2e59d9;
+            }
+
+            button:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
+
+        #status-message {
+            margin-left: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            min-width: 300px;
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        /* 시각화 컨테이너 */
+        .list-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            min-height: 250px;
+            background: white;
+            border-radius: 15px;
+            padding: 60px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        /* 노드 디자인 */
+        .node {
+            display: flex;
+            align-items: center;
+            position: relative;
+            transition: all 0.5s;
+        }
+
+        .node-structure {
+            display: flex;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: var(--node-bg);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .data-part {
+            padding: 12px 18px;
+            background-color: #eef2ff;
+            border-right: 2px solid #333;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .next-part {
+            padding: 12px 10px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* 화살표 */
+        .arrow {
+            font-size: 30px;
+            margin: 0 10px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        /* 포인터 레이블 (Front, Rear) */
+        .pointer-label {
+            position: absolute;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            width: 60px;
+        }
+
+        .front-label {
+            top: -45px;
+            color: var(--accent);
+        }
+
+        .rear-label {
+            bottom: -45px;
+            color: var(--primary);
+        }
+
+        /* 애니메이션 효과 */
+        .highlight-node {
+            border-color: var(--accent) !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .new-node-anim {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .dequeue-anim {
+            transform: translateX(-100px);
+            opacity: 0;
+            transition: 0.5s;
+        }
+
+        .null-label {
+            font-weight: bold;
+            color: #bbb;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Queue Visualizer (FIFO)</h1>
+
+    <div class="controls">
+        <input type="number" id="inputValue" placeholder="값" value="10">
+        <button id="btnEnqueue" onclick="actionEnqueue()">Enqueue</button>
+        <button id="btnDequeue" onclick="actionDequeue()">Dequeue</button>
+        <button onclick="actionFront()">Front (Peek)</button>
+        <div id="status-message">준비 완료</div>
+    </div>
+
+    <div id="list-container" class="list-container">
+    </div>
+
+    <script>
+        // --- 1. 데이터 구조 로직 (C++ 코드 기반) ---
+        class Node {
+            constructor(data) {
+                this.data = data;
+                this.next = null;
+            }
+        }
+
+        class Queue {
+            constructor() {
+                this.head = null; // C++의 head
+                this.tail = null; // C++의 tail
+                this.n = 0;
+            }
+        }
+
+        const q = new Queue();
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function setStatus(msg) {
+            document.getElementById('status-message').innerText = msg;
+            await sleep(1000); // 동작 확인을 위한 대기
+        }
+
+        function toggleButtons(state) {
+            document.querySelectorAll('button').forEach(b => b.disabled = state);
+        }
+
+        // --- 2. 핵심 동작 애니메이션 ---
+
+        // [Enqueue: 데이터 삽입 (뒤로)]
+        async function actionEnqueue() {
+            const val = document.getElementById('inputValue').value;
+            if (!val) return;
+            toggleButtons(true);
+
+            await setStatus(`1. 새로운 노드 [${val}] 생성 중...`);
+
+            const newNode = new Node(val);
+            if (q.n === 0) {
+                q.head = q.tail = newNode;
+            } else {
+                await setStatus(`2. 현재 Rear의 Next를 새 노드로 연결...`);
+                q.tail.next = newNode;
+                q.tail = newNode;
+            }
+            q.n++;
+
+            render();
+            await setStatus(`3. Rear 포인터가 새 노드를 가리킵니다.`);
+
+            toggleButtons(false);
+        }
+
+        // [Dequeue: 데이터 삭제 (앞에서)]
+        async function actionDequeue() {
+            if (q.n === 0) {
+                await setStatus("큐가 비어있습니다!");
+                return;
+            }
+            toggleButtons(true);
+
+            await setStatus(`1. Front 노드 [${q.head.data}] 제거 준비...`);
+            const firstNode = document.querySelector('.node');
+            if (firstNode) firstNode.classList.add('dequeue-anim');
+            await sleep(500);
+
+            // 실제 로직 (Node* temp = head; head = head->next; delete temp;)
+            q.head = q.head.next;
+            q.n--;
+            if (q.head === null) q.tail = null;
+
+            render();
+            await setStatus(`2. 제거 완료. 다음 노드가 Front가 됩니다.`);
+            toggleButtons(false);
+        }
+
+        async function actionFront() {
+            if (!q.head) {
+                alert("Queue is Empty");
+                return;
+            }
+            const firstBox = document.querySelector('.node-structure');
+            firstBox.classList.add('highlight-node');
+            await setStatus(`현재 Front의 값은 ${q.head.data}입니다.`);
+            firstBox.classList.remove('highlight-node');
+        }
+
+        // --- 3. 렌더링 함수 ---
+        function render() {
+            const container = document.getElementById('list-container');
+            container.innerHTML = '';
+
+            if (q.n === 0) {
+                container.innerHTML = '<div class="null-label">NULL (Empty Queue)</div>';
+                return;
+            }
+
+            let cur = q.head;
+            while (cur) {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'node';
+
+                // Front/Rear 포인터 레이블 추가
+                let labelHTML = '';
+                if (cur === q.head) labelHTML += `<div class="pointer-label front-label">Front</div>`;
+                if (cur === q.tail) labelHTML += `<div class="pointer-label rear-label">Rear</div>`;
+
+                nodeDiv.innerHTML = `
+                        ${labelHTML}
+                        <div class="node-structure">
+                            <div class="data-part">${cur.data}</div>
+                            <div class="next-part">&bull;</div>
+                        </div>
+                        <div class="arrow">&rarr;</div>
+                    `;
+
+                container.appendChild(nodeDiv);
+                cur = cur.next;
+            }
+
+            const nullDiv = document.createElement('div');
+            nullDiv.className = 'null-label';
+            nullDiv.innerText = 'NULL';
+            container.appendChild(nullDiv);
+        }
+
+        render();
+    </script>
+</body>
+</html>
