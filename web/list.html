@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singly Linked List Visualizer</title>
+    <link rel="stylesheet" href="list.css">
+</head>
+<body>
+    <main class="container">
+        <section class="header">
+            <h1>Singly Linked List Visualizer</h1>
+            <p>단일 연결 리스트를 웹에서 시각화합니다.</p>
+        </section>
+
+        <section class="card">
+            <h2>Singly Linked List</h2>
+
+            <div class="control-area">
+                <input type="number" id="valueInput" placeholder="value">
+                <button id="insertFrontBtn">Insert Front</button>
+                <button id="insertBackBtn">Insert Back</button>
+                <button id="removeFrontBtn">Remove Front</button>
+                <button id="removeBackBtn">Remove Back</button>
+            </div>
+
+            <div class="info-area">
+                <p>Head: <span id="headValue">NULL</span></p>
+                <p>Size: <span id="sizeValue">0</span></p>
+            </div>
+
+            <div class="list-area">
+                <p class="list-label"> 
+                    Head<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;↓
+                </p>
+                <div id="listContainer" class="list-container">
+                    <p class="empty-text">NULL</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="list.js"></script>
+</body>
+</html>

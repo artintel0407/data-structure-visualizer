@@ -1,0 +1,133 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #f5f6f8;
+    font-family: Arial, sans-serif;
+    color: #222;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 760px;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.header h1 {
+    font-size: 36px;
+    margin-bottom: 8px;
+}
+
+.header p {
+    color: #666;
+    font-size: 16px;
+}
+
+.card {
+    background-color: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.control-area {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.control-area input {
+    width: 120px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 16px;
+}
+
+.control-area button {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 12px;
+    background-color: #3182f6;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.control-area button:hover {
+    background-color: #1b64da;
+}
+
+.info-area {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    font-size: 16px;
+}
+
+.array-area {
+    background-color: #f9fafb;
+    border-radius: 16px;
+    padding: 20px;
+    min-height: 180px;
+    overflow-x: auto;
+}
+
+.array-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.array-cell-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.array-index {
+    color: #777;
+    font-size: 14px;
+}
+
+.array-cell {
+    width: 64px;
+    height: 64px;
+    background-color: #3182f6;
+    color: white;
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    transition: 0.2s;
+}
+
+.array-cell.active {
+    transform: translateY(-6px);
+    background-color: #1b64da;
+}
+
+.array-cell.changed {
+    transform: scale(1.08);
+}

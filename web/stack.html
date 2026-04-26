@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Structure Visualizer</title>
+    <link rel="stylesheet" href="stack.css">
+</head>
+<body>
+    <main class="container">
+        <section class="header">
+            <h1>Stack Visualizer</h1>
+            <p>Stack 자료구조를 웹에서 시각화합니다.</p>
+        </section>
+
+        <section class="card">
+            <h2>Stack</h2>
+
+            <div class="control-area">
+                <input type="number" id="valueInput" placeholder="값 입력">
+                <button id="pushBtn">Push</button>
+                <button id="popBtn">Pop</button>
+            </div>
+
+            <div class="info-area">
+                <p>Top: <span id="topValue">NULL</span></p>
+                <p>Size: <span id="sizeValue">0</span></p>
+            </div>
+
+            <div class="stack-area">
+                <p class="stack-label">Top</p>
+                <div id="stackContainer" class="stack-container">
+                    <p class="empty-text">NULL</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="stack.js"></script>
+</body>
+</html>

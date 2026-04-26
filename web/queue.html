@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Visualizer</title>
+    <link rel="stylesheet" href="queue.css">
+</head>
+<body>
+    <main class="container">
+        <section class="header">
+            <h1>Queue Visualizer</h1>
+            <p>Queue 자료구조를 웹에서 시각화합니다.</p>
+        </section>
+
+        <section class="card">
+            <h2>Queue</h2>
+
+            <div class="control-area">
+                <input type="number" id="valueInput" placeholder="값 입력">
+                <button id="enqueueBtn">Enqueue</button>
+                <button id="dequeueBtn">Dequeue</button>
+            </div>
+
+            <div class="info-area">
+                <p>Front: <span id="frontValue">NULL</span></p>
+                <p>Rear: <span id="rearValue">NULL</span></p>
+                <p>Size: <span id="sizeValue">0</span></p>
+            </div>
+
+            <div class="queue-area">
+                <div class="queue-labels">
+                    <span>Front</span>
+                    <span>Rear</span>
+                </div>
+
+                <div id="queueContainer" class="queue-container">
+                    <p class="empty-text">NULL</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="queue.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Array Visualizer</title>
+    <link rel="stylesheet" href="array.css">
+</head>
+<body>
+    <main class="container">
+        <section class="header">
+            <h1>Array Visualizer</h1>
+            <p>고정 크기 배열을 웹에서 시각화합니다.</p>
+        </section>
+
+        <section class="card">
+            <h2>Array</h2>
+
+            <div class="control-area">
+                <input type="number" id="indexInput" placeholder="index">
+                <input type="number" id="valueInput" placeholder="value">
+                <button id="setBtn">Set</button>
+                <button id="insertBtn">Insert</button>
+                <button id="eraseBtn">Erase</button>
+            </div>
+
+            <div class="info-area">
+                <p>Size: <span id="sizeValue">0</span></p>
+                <p>Selected: <span id="selectedValue">NULL</span></p>
+            </div>
+
+            <div class="array-area">
+                <div id="arrayContainer" class="array-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="array.js"></script>
+</body>
+</html>
